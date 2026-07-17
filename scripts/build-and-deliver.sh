@@ -86,37 +86,43 @@ fi
 if [ ! -f "${JNILIBS}/libtun2socks.so" ]; then
     ok "دانلود libtun2socks.so ..."
     cd /tmp
-    if wget -q "https://github.com/xjasonlyu/tun2socks/releases/download/${T2S_VER}/tun2socks-linux-arm64.zip" -O t2s.zip; then
+    # thử multiple URLs
+    if wget -q "https://github.com/xjasonlyu/tun2socks/releases/download/v2.8.3/tun2socks-android-arm64.zip" -O t2s.zip; then
         unzip -o t2s.zip -d /tmp/t2s-ext >/dev/null 2>&1
         BIN=$(find /tmp/t2s-ext -type f -name "tun2socks*" ! -name "*.zip" 2>/dev/null | head -1)
-        if [ -n "${BIN}" ]; then
-            cp "${BIN}" "${JNILIBS}/libtun2socks.so"
-            chmod +x "${JNILIBS}/libtun2socks.so"
-            ok "libtun2socks.so آماده شد"
-        fi
-        rm -rf /tmp/t2s-ext t2s.zip
+    elif wget -q "https://github.com/xjasonlyu/tun2socks/releases/latest/download/tun2socks-android-arm64.zip" -O t2s.zip; then
+        unzip -o t2s.zip -d /tmp/t2s-ext >/dev/null 2>&1
+        BIN=$(find /tmp/t2s-ext -type f -name "tun2socks*" ! -name "*.zip" 2>/dev/null | head -1)
     else
-        warn "دانلود tun2socks ناموفق"
-        rm -f t2s.zip
+        BIN=""
     fi
+    if [ -n "${BIN}" ] && [ -f "${BIN}" ]; then
+        cp "${BIN}" "${JNILIBS}/libtun2socks.so"
+        chmod +x "${JNILIBS}/libtun2socks.so"
+        ok "libtun2socks.so آماده شد"
+    else
+        warn "دانلود tun2socks ناموفق — بدونش ادامه می‌دیم"
+    fi
+    rm -rf /tmp/t2s-ext t2s.zip
 fi
 
-# ── ۵. دانلود GEO assets ──
+# ── ۵. دانلود GEO assets (URLهای صحیح) ──
 if [ ! -f "${ASSETS}/geoip.dat" ] || [ ! -s "${ASSETS}/geoip.dat" ]; then
     ok "دانلود geoip.dat ..."
-    curl -fsSL "https://raw.githubusercontent.com/XTLS/Xray-install/master/geoip.dat" -o "${ASSETS}/geoip.dat" || \
-    curl -fsSL "https://github.com/XTLS/Xray-core/releases/latest/download/geoip.dat" -o "${ASSETS}/geoip.dat" || \
+    curl -fsSL "https://raw.githubusercontent.com/XTLS/Xray-install/main/geoip.dat" -o "${ASSETS}/geoip.dat" || \
+    curl -fsSL "https://github.com/XTLS/Xray-install/raw/main/geoip.dat" -o "${ASSETS}/geoip.dat" || \
     warn "خطا در دانلود geoip.dat"
 fi
 if [ ! -f "${ASSETS}/geosite.dat" ] || [ ! -s "${ASSETS}/geosite.dat" ]; then
     ok "دانلود geosite.dat ..."
-    curl -fsSL "https://raw.githubusercontent.com/XTLS/Xray-install/master/geosite.dat" -o "${ASSETS}/geosite.dat" || \
-    curl -fsSL "https://github.com/XTLS/Xray-core/releases/latest/download/geosite.dat" -o "${ASSETS}/geosite.dat" || \
+    curl -fsSL "https://raw.githubusercontent.com/XTLS/Xray-install/main/geosite.dat" -o "${ASSETS}/geosite.dat" || \
+    curl -fsSL "https://github.com/XTLS/Xray-install/raw/main/geosite.dat" -o "${ASSETS}/geosite.dat" || \
     warn "خطا در دانلود geosite.dat"
 fi
 
-# چک کنیم GEO دانلود شد یا نه، ولی ادامه بده
-if [ -f "${ASSETS}/geoip.dat" ] && [ -f "${ASSETS}/geosite.dat" ]; then
+# چک کنیم GEO دانلود شد یا نه
+if [ -f "${ASSETS}/geoip.dat" ] && [ -s "${ASSETS}/geoip.dat" ] && \
+   [ -f "${ASSETS}/geosite.dat" ] && [ -s "${ASSETS}/geosite.dat" ]; then
     ok "GEO assets آماده شد"
 else
     warn "GEO assets کامل نیستند، با بیلد ادامه می‌دهیم"
