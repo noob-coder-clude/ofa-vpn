@@ -22,7 +22,7 @@
         android:strokeWidth="2.5"
         android:strokeColor="#8B949E"
         android:fillColor="#00000000" />
-    <circle android:cx="48" android:cy="52" android:r="3.5" android:fillColor="#8B949E" />
-    <circle android:cx="60" android:cy="63" android:r="3.5" android:fillColor="#8B949E" />
-    <circle android:cx="72" android:cy="52" android:r="3.5" android:fillColor="#8B949E" />
+    <path android:pathData="M44.5,52 a3.5,3.5 0 1,1 7,0 a3.5,3.5 0 1,1 -7,0" android:fillColor="#8B949E" />
+    <path android:pathData="M56.5,63 a3.5,3.5 0 1,1 7,0 a3.5,3.5 0 1,1 -7,0" android:fillColor="#8B949E" />
+    <path android:pathData="M68.5,52 a3.5,3.5 0 1,1 7,0 a3.5,3.5 0 1,1 -7,0" android:fillColor="#8B949E" />
 </vector>
