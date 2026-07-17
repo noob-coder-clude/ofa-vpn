@@ -16,8 +16,8 @@ import com.ofa.vpn.core.PingManager
 import com.ofa.vpn.core.XrayCore
 import com.ofa.vpn.data.model.ConnectionMode
 import com.ofa.vpn.data.model.ConnectionState
+import com.ofa.vpn.data.local.AppDatabase
 import com.ofa.vpn.data.local.ServerDao
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -39,7 +39,6 @@ import kotlinx.coroutines.launch
  *  - Per-app proxy: مسیریابی فقط اپ‌های انتخابی
  *  - Health monitor: تشخیص قطعی واقعی و switch به سرور بعدی (بدون looping کور)
  */
-@AndroidEntryPoint
 class VpnConnectionService : VpnService() {
 
     companion object {
@@ -77,7 +76,7 @@ class VpnConnectionService : VpnService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var healthJob: Job? = null
-    @Inject lateinit var serverDao: ServerDao
+    private lateinit var serverDao: ServerDao
 
     // زنجیره fallback سرورها (از پیش مرتب‌شده — بدون looping کور)
     private var fallbackChain: List<Server> = emptyList()
@@ -87,6 +86,7 @@ class VpnConnectionService : VpnService() {
     override fun onCreate() {
         super.onCreate()
         xrayCore = XrayCore(applicationContext)
+        serverDao = AppDatabase.getDatabase(applicationContext).serverDao()
         createNotificationChannel()
     }
 
