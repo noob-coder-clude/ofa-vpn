@@ -10,6 +10,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 import java.net.Socket
+import javax.inject.Inject
 
 /**
  * تست تاخیر (پینگ TCP) + انتخاب هوشمند سرور
@@ -22,7 +23,7 @@ import java.net.Socket
  * این یه مدل ML سنگین نیست؛ یه heuristic وزن‌دار سبکه که روی
  * دستگاه اجرا می‌شه و با هر بار استفاده بهتر می‌شه (یادگیری محلی).
  */
-class PingManager {
+class PingManager @Inject constructor() {
 
     companion object {
         const val TIMEOUT_MS = 3000
