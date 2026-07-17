@@ -1,0 +1,7 @@
+{
+  "versionCode": 2,
+  "versionName": "0.0.2",
+  "apkUrl": "https://github.com/noob-coder-clude/ofa-vpn/releases/latest/download/app-debug.apk",
+  "notes": "UI ExpressVPN-style + splash + smart server selection + in-app update",
+  "minRequired": 1
+}

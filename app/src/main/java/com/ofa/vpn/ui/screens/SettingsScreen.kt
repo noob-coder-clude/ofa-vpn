@@ -189,7 +189,7 @@ fun SettingsScreen(
                         Text(text = "OFA VPN", style = MaterialTheme.typography.titleMedium, color = TextWhite)
                     }
                     Text(
-                        text = "Version 0.0.1",
+                        text = "Version 0.0.2",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextGray
                     )
@@ -204,6 +204,34 @@ fun SettingsScreen(
                         color = TextGray
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    // Update check
+                    val updateInfo by viewModel.updateInfo.collectAsState()
+                    if (updateInfo != null) {
+                        Text(
+                            text = "New version: ${updateInfo!!.versionName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AccentTeal
+                        )
+                        Text(
+                            text = updateInfo!!.notes,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextGray
+                        )
+                        Button(
+                            onClick = { viewModel.downloadUpdate() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
+                        ) {
+                            Text("Download Update", color = Color.Black, fontWeight = FontWeight.SemiBold)
+                        }
+                    } else {
+                        androidx.compose.material3.TextButton(
+                            onClick = { viewModel.checkUpdate() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Check for updates", color = AccentTeal, fontWeight = FontWeight.Medium)
+                        }
+                    }
                     // لینک قوانین و حریم خصوصی
                     androidx.compose.material3.TextButton(
                         onClick = { onBack(); onNavigateTerms() },

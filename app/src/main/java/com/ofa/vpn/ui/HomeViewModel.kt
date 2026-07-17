@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.VpnService
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ofa.vpn.core.PingManager
 import com.ofa.vpn.data.model.ConnectionMode
 import com.ofa.vpn.data.model.ConnectionState
 import com.ofa.vpn.data.model.Server
@@ -32,7 +33,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     application: Application,
-    private val subscriptionRepository: SubscriptionRepository
+    private val subscriptionRepository: SubscriptionRepository,
+    private val pingManager: PingManager
 ) : AndroidViewModel(application) {
 
     private val _vpnState = MutableStateFlow(ConnectionState.DISCONNECTED)
@@ -92,7 +94,11 @@ class HomeViewModel @Inject constructor(
     fun setServersFromRepo() {
         viewModelScope.launch {
             val servers = subscriptionRepository.getAllServers().first()
-            VpnConnectionManager.setFallbackChain(servers)
+            val best = pingManager.selectBest(servers, _selectedMode.value)
+            VpnConnectionManager.setFallbackChain(
+                if (best != null) listOf(best) + servers.filter { it.id != best.id }
+                else servers
+            )
         }
     }
 

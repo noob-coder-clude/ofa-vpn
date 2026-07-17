@@ -2,6 +2,7 @@ package com.ofa.vpn.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ofa.vpn.core.update.UpdateManager
 import com.ofa.vpn.data.local.SettingsRepository
 import com.ofa.vpn.data.model.Server
 import com.ofa.vpn.data.remote.SubscriptionRepository
@@ -28,7 +29,8 @@ import javax.inject.Inject
 @HiltViewModel
 class OFAVPNViewModel @Inject constructor(
     private val subscriptionRepository: SubscriptionRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val updateManager: UpdateManager
 ) : ViewModel() {
 
     // ---- Servers ---------------------------------------------------------
@@ -65,6 +67,33 @@ class OFAVPNViewModel @Inject constructor(
 
     private val _navEvents = Channel<NavEvent>(Channel.BUFFERED)
     val navEvents = _navEvents.receiveAsFlow()
+
+    // ---- Update (in-app) ------------------------------------------------
+    private val _updateInfo = kotlinx.coroutines.flow.MutableStateFlow<UpdateManager.UpdateInfo?>(null)
+    val updateInfo: kotlinx.coroutines.flow.StateFlow<UpdateManager.UpdateInfo?> = _updateInfo
+
+    fun checkUpdate() {
+        viewModelScope.launch {
+            runCatching {
+                val result = updateManager.checkUpdate()
+                _updateInfo.value = result.info.takeIf { result.hasUpdate }
+            }.onFailure {
+                _navEvents.send(NavEvent.ShowMessage("Update check failed"))
+            }
+        }
+    }
+
+    fun downloadUpdate() {
+        val info = _updateInfo.value ?: return
+        viewModelScope.launch {
+            runCatching {
+                val ok = updateManager.downloadAndInstall(info.apkUrl)
+                if (!ok) _navEvents.send(NavEvent.ShowMessage("Download failed"))
+            }.onFailure {
+                _navEvents.send(NavEvent.ShowMessage("Update failed"))
+            }
+        }
+    }
 
     // ---- Actions ---------------------------------------------------------
 
