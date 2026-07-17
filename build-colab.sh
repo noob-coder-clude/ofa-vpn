@@ -11,14 +11,24 @@ error() { echo -e "\033[31m[error]\033[0m $*" >&2; }
 warn()  { echo -e "\033[33m[warn]\033[0m $*"; }
 success(){ echo -e "\033[32m[success]\033[0m $*"; }
 
-info "بررسی ابزارهای مورد نیاز"
-for cmd in git unzip wget curl; do
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    apt-get update -qq
-    apt-get install -y --no-install-recommends "$cmd"
-    info "✅ $cmd نصب شد"
-  fi
-done
+info "نصب ابزارهای مورد نیاز"
+apt-get update -qq 2>/dev/null || true
+apt-get install -y -qq openjdk-17-jdk wget unzip git curl python3 >/dev/null 2>&1 || true
+
+info "نصب Android SDK"
+if [ ! -f "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" ]; then
+  mkdir -p "${ANDROID_HOME}/cmdline-tools"
+  wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
+  unzip -q -o /tmp/cmdtools.zip -d "${ANDROID_HOME}/cmdline-tools"
+  mv "${ANDROID_HOME}/cmdline-tools/cmdline-tools" "${ANDROID_HOME}/cmdline-tools/latest" 2>/dev/null || true
+  rm -f /tmp/cmdtools.zip
+fi
+
+info "قبول لایسنس‌ها"
+yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" --licenses >/dev/null 2>&1 || true
+
+info "نصب SDK packages"
+"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;r25c" >/dev/null 2>&1 || true
 
 REPO_DIR="/content/ofa-vpn"
 if [ -d "$REPO_DIR/.git" ]; then
@@ -85,7 +95,13 @@ cat > app/src/main/res/values/themes.xml <<'EOF'
 </resources>
 EOF
 
-info="اصلاح AndroidManifest.xml (حذف package، تغییر label)"
+info "نوشتن local.properties"
+cat > "${REPO_DIR}/local.properties" <<LOCALPROPS
+sdk.dir=${ANDROID_HOME}
+ndk.dir=${NDK_ROOT}
+LOCALPROPS
+
+info "اصلاح AndroidManifest.xml"
 sed -i 's/package="com.ofa.vpn"//g' app/src/main/AndroidManifest.xml
 sed -i 's|android:label="OFA VPN"|android:label="@string/app_name"|g' app/src/main/AndroidManifest.xml
 
@@ -108,4 +124,4 @@ else
   exit 1
 fi
 
-success="تمام کارهای ساختمانی تکمیل شد! 🎉"
+success "تمام کارهای ساختمانی تکمیل شد!"
