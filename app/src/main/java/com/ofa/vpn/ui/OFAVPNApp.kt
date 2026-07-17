@@ -25,6 +25,7 @@ import com.ofa.vpn.ui.navigation.NavRoutes
 import com.ofa.vpn.ui.screens.HomeScreen
 import com.ofa.vpn.ui.screens.SettingsScreen
 import com.ofa.vpn.ui.screens.ServersScreen
+import com.ofa.vpn.ui.screens.SplashScreen
 import com.ofa.vpn.ui.screens.TermsScreen
 import com.ofa.vpn.ui.theme.AccentGreen
 import com.ofa.vpn.ui.theme.DarkSurface
@@ -33,7 +34,7 @@ import com.ofa.vpn.ui.theme.TextGray
 import com.ofa.vpn.ui.theme.TextWhite
 
 /**
- * OFAVPNApp — bottom navigation shell with 3 tabs:
+ * OFAVPNApp — splash → bottom navigation shell with 3 tabs:
  *  - Home (دکمه اتصال)
  *  - Servers (لیست سرورها)
  *  - Settings (تنظیمات)
@@ -44,40 +45,44 @@ fun OFAVPNApp(
 ) {
     val viewModel: OFAVPNViewModel = hiltViewModel()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    var showSplash by remember { mutableStateOf(true) }
+    var currentRoute by remember { mutableStateOf(NavRoutes.HOME) }
 
     OFAVPNTheme(darkTheme = isDarkTheme) {
-        var currentRoute by remember { mutableStateOf(NavRoutes.HOME) }
-
-        Scaffold(
-            bottomBar = {
-                BottomNavigationBar(
-                    currentRoute = currentRoute,
-                    onRouteSelected = { currentRoute = it }
-                )
-            }
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize()
-            ) {
-                when (currentRoute) {
-                    NavRoutes.HOME -> HomeScreen(
-                        onNavigate = { currentRoute = it },
-                        onVpnPermissionRequest = onVpnPermissionRequest
+        if (showSplash) {
+            SplashScreen(onFinished = { showSplash = false })
+        } else {
+            Scaffold(
+                bottomBar = {
+                    BottomNavigationBar(
+                        currentRoute = currentRoute,
+                        onRouteSelected = { currentRoute = it }
                     )
-                    NavRoutes.SERVERS -> ServersScreen(
-                        viewModel = viewModel,
-                        onNavigate = { currentRoute = it }
-                    )
-                    NavRoutes.SETTINGS -> SettingsScreen(
-                        viewModel = viewModel,
-                        onBack = { currentRoute = NavRoutes.HOME },
-                        onNavigateTerms = { currentRoute = NavRoutes.TERMS }
-                    )
-                    NavRoutes.TERMS -> TermsScreen(
-                        onBack = { currentRoute = NavRoutes.SETTINGS }
-                    )
+                }
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                ) {
+                    when (currentRoute) {
+                        NavRoutes.HOME -> HomeScreen(
+                            onNavigate = { currentRoute = it },
+                            onVpnPermissionRequest = onVpnPermissionRequest
+                        )
+                        NavRoutes.SERVERS -> ServersScreen(
+                            viewModel = viewModel,
+                            onNavigate = { currentRoute = it }
+                        )
+                        NavRoutes.SETTINGS -> SettingsScreen(
+                            viewModel = viewModel,
+                            onBack = { currentRoute = NavRoutes.HOME },
+                            onNavigateTerms = { currentRoute = NavRoutes.TERMS }
+                        )
+                        NavRoutes.TERMS -> TermsScreen(
+                            onBack = { currentRoute = NavRoutes.SETTINGS }
+                        )
+                    }
                 }
             }
         }

@@ -4,6 +4,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Transparent background (no fill) -->
     <!-- Outer ring -->
     <path
         android:pathData="M54,18 A36,36 0 1,1 53.9,18"
