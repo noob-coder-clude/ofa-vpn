@@ -101,8 +101,27 @@ class ConfigParser {
     private fun buildOutbounds(server: Server, mode: ConnectionMode): JSONArray {
         val arr = JSONArray()
 
-        // outbound اصلی: proxy
-        arr.put(buildProxyOutbound(server))
+        when (mode) {
+            ConnectionMode.AETHER -> {
+                // AETHER: ترافیک از طریق SOCKS5 محلی aether می‌ره
+                // aether به عنوان process جدا اجرا می‌شه و روی 127.0.0.1:1819 گوش می‌ده
+                arr.put(JSONObject().apply {
+                    put("tag", "proxy")
+                    put("protocol", "socks")
+                    put("settings", JSONObject().apply {
+                        put("servers", JSONArray().put(JSONObject().apply {
+                            put("address", AetherManager.SOCKS_HOST)
+                            put("port", AetherManager.SOCKS_PORT)
+                            put("users", JSONObject())
+                        }))
+                    })
+                })
+            }
+            else -> {
+                // outbound اصلی: proxy مستقیم
+                arr.put(buildProxyOutbound(server))
+            }
+        }
 
         // direct — برای ترافیکی که نباید از تونل بره
         arr.put(JSONObject().apply {

@@ -14,6 +14,7 @@ import java.io.File
 import com.ofa.vpn.core.ConfigParser
 import com.ofa.vpn.core.PingManager
 import com.ofa.vpn.core.XrayCore
+import com.ofa.vpn.core.aether.AetherManager
 import com.ofa.vpn.data.local.AppDatabase
 import com.ofa.vpn.data.local.ServerDao
 import com.ofa.vpn.data.model.ConnectionMode
@@ -79,6 +80,7 @@ class VpnConnectionService : VpnService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var healthJob: Job? = null
     private lateinit var serverDao: ServerDao
+    private lateinit var aetherManager: AetherManager
 
     // زنجیره fallback سرورها (از پیش مرتب‌شده — بدون looping کور)
     private var fallbackChain: List<Server> = emptyList()
@@ -89,6 +91,7 @@ class VpnConnectionService : VpnService() {
         super.onCreate()
         xrayCore = XrayCore(applicationContext)
         serverDao = AppDatabase.getDatabase(applicationContext).serverDao()
+        aetherManager = AetherManager(applicationContext)
         createNotificationChannel()
     }
 
@@ -122,6 +125,25 @@ class VpnConnectionService : VpnService() {
         serviceScope.launch {
             try {
                 xrayCore.prepareAssets()
+
+                if (currentMode == ConnectionMode.AETHER) {
+                    // مسیر aether: باینری رو استخراج + اجرا، بعد Xray رو به SOCKS5 وصل کن
+                    val ok = aetherManager.start(protocol = "masque", noize = "firewall", scan = "balanced")
+                    if (!ok) {
+                        Log.e(TAG, "aether start failed")
+                        _state.value = ConnectionState.ERROR
+                        stopVpn()
+                        return@launch
+                    }
+                    // aether یه سرور مجازی نیست؛ یه server جعلی می‌سازیم که فقط برای config استفاده بشه
+                    val dummy = Server(
+                        id = -1, name = "Aether", protocol = "socks",
+                        address = AetherManager.SOCKS_HOST, port = AetherManager.SOCKS_PORT,
+                        uuid = "", remark = "", rawUri = ""
+                    )
+                    connectToServer(dummy)
+                    return@launch
+                }
 
                 // خواندن زنجیره سرورها از VpnConnectionManager
                 fallbackChain = VpnConnectionManager.getFallbackChain()
@@ -331,6 +353,9 @@ class VpnConnectionService : VpnService() {
         healthJob?.cancel()
         stopTun2Socks()
         xrayCore.stop()
+        if (currentMode == ConnectionMode.AETHER) {
+            aetherManager.stop()
+        }
         closeTun()
         _state.value = ConnectionState.DISCONNECTED
         _activeServer.value = null
