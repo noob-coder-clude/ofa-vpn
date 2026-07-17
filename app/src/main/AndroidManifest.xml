@@ -12,7 +12,8 @@
         android:label="OFA VPN"
         android:theme="@style/Theme.OFAVPN"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:name=".OFAVPN">
         <activity
             android:name=".MainActivity"
             android:exported="true"

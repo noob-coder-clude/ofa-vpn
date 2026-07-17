@@ -60,4 +60,12 @@ class SubscriptionRepository @Inject constructor(
      * دریافت ساب‌های فعال
      */
     suspend fun getEnabledSubscriptions(): List<Subscription> = subscriptionDao.getEnabled()
+
+    suspend fun updateServer(server: Server) {
+        serverDao.update(server)
+    }
+
+    suspend fun getSubscriptionById(id: Long): Subscription? {
+        return subscriptionDao.getById(id)
+    }
 }

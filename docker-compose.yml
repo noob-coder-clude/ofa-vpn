@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  builder:
+    build: .
+    container_name: ofa-builder
+    volumes:
+      # خروجی APK رو میریزه تو همین پوشه روی سرور
+      - ./output:/tmp/ofa-output
+    environment:
+      - ANDROID_HOME=/opt/android-sdk
+      - ANDROID_SDK_ROOT=/opt/android-sdk
+    deploy:
+      resources:
+        limits:
+          memory: 4g
