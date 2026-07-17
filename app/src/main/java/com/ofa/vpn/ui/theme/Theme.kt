@@ -1,12 +1,8 @@
 package com.ofa.vpn.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -65,20 +61,6 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun OFAVPNTheme(
     darkTheme: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    OfaVpnTheme(
-        darkTheme = darkTheme,
-        windowSizeClass = WindowWidthSizeClass.Medium,
-        content = content
-    )
-}
-
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
-@Composable
-fun OfaVpnTheme(
-    darkTheme: Boolean = true,
-    windowSizeClass: WindowSizeClass = WindowWidthSizeClass.Compact,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

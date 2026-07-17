@@ -1,10 +1,15 @@
-// Add ConnectionState enum back to ConnectionHealth.kt
+package com.ofa.vpn.data.model
+
+/**
+ * وضعیت اتصال VPN
+ * based on REAL connection status, not just ping
+ */
 enum class ConnectionState {
     DISCONNECTED,     // قطع
-    CONNECTING,        // در حال اتصال
-    CONNECTED,         // وصل شده
-    RECONNECTING,      // در حال وصل مجدد (fallback)
-    ERROR              // خطا
+    CONNECTING,       // در حال اتصال
+    CONNECTED,        // وصل شده
+    RECONNECTING,     // در حال وصل مجدد (fallback)
+    ERROR             // خطا
 }
 
 /**
@@ -19,6 +24,6 @@ data class ConnectionHealth(
     val uploadSpeed: Long = 0,          // bytes/s
     val totalDownload: Long = 0,        // bytes
     val totalUpload: Long = 0,          // bytes
-    val connectedSince: Long = 0,        // timestamp
+    val connectedSince: Long = 0,       // timestamp
     val errorMessage: String? = null
 )
