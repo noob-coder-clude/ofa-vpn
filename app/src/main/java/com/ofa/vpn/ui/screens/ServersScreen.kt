@@ -128,6 +128,7 @@ fun ServersScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ServerCard(
     server: Server,
