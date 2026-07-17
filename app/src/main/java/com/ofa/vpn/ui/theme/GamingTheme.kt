@@ -49,38 +49,4 @@ object GamingTheme {
         )
 }
 
-/**
- * انیمیشن چرخش حلقه (برای Modifier.rotate)
- */
-@Composable
-fun rememberRingRotation(): Float {
-    val transition = rememberInfiniteTransition(label = "ringRotation")
-    val angle by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "angle"
-    )
-    return angle
-}
-
-/**
- * انیمیشن پالس شدت درخشش (برای alpha)
- */
-@Composable
-fun rememberPulseAlpha(): Float {
-    val transition = rememberInfiniteTransition(label = "pulse")
-    val alpha by transition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-    return alpha
-}
+// rememberRingRotation and rememberPulseAlpha moved to ModeTheme.kt to avoid duplicate declarations
