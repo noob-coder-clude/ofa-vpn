@@ -35,6 +35,7 @@ data class ModeVisual(
 
 @Composable
 fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
+    val pageBg = LocalOfaColors.current.pageBackground
     return when (mode) {
         com.ofa.vpn.data.model.ConnectionMode.GAMING -> ModeVisual(
             name = "Gaming",
@@ -42,13 +43,13 @@ fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
             secondary = Color(0xFFFF2D2D),
             glow = Color(0xFFFFD23F),
             bgCenter = Color(0xFFFF6B1A).copy(alpha = 0.25f),
-            bgEdge = Color(0xFF1A0A00),
+            bgEdge = pageBg,
             ringBrush = Brush.sweepGradient(listOf(
                 Color(0xFFFFD23F), Color(0xFFFF6B1A),
                 Color(0xFFFF2D2D), Color(0xFFFF6B1A), Color(0xFFFFD23F)
             )),
             bgBrush = Brush.radialGradient(
-                listOf(Color(0xFFFF6B1A).copy(alpha = 0.22f), Color(0xFF1A0A00), Color.Black),
+                listOf(Color(0xFFFF6B1A).copy(alpha = 0.22f), pageBg),
                 radius = 900f
             ),
             label = "گیمینگ",
@@ -60,13 +61,13 @@ fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
             secondary = Color(0xFF00C853),
             glow = Color(0xFF69F0AE),
             bgCenter = Color(0xFF00E676).copy(alpha = 0.18f),
-            bgEdge = Color(0xFF002B14),
+            bgEdge = pageBg,
             ringBrush = Brush.sweepGradient(listOf(
                 Color(0xFF69F0AE), Color(0xFF00E676),
                 Color(0xFF00C853), Color(0xFF00E676), Color(0xFF69F0AE)
             )),
             bgBrush = Brush.radialGradient(
-                listOf(Color(0xFF00E676).copy(alpha = 0.15f), Color(0xFF002B14), Color.Black),
+                listOf(Color(0xFF00E676).copy(alpha = 0.15f), pageBg),
                 radius = 900f
             ),
             label = "خودکار",
@@ -78,13 +79,13 @@ fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
             secondary = Color(0xFF2979FF),
             glow = Color(0xFF82B1FF),
             bgCenter = Color(0xFF00B0FF).copy(alpha = 0.18f),
-            bgEdge = Color(0xFF001122),
+            bgEdge = pageBg,
             ringBrush = Brush.sweepGradient(listOf(
                 Color(0xFF82B1FF), Color(0xFF00B0FF),
                 Color(0xFF2979FF), Color(0xFF00B0FF), Color(0xFF82B1FF)
             )),
             bgBrush = Brush.radialGradient(
-                listOf(Color(0xFF00B0FF).copy(alpha = 0.15f), Color(0xFF001122), Color.Black),
+                listOf(Color(0xFF00B0FF).copy(alpha = 0.15f), pageBg),
                 radius = 900f
             ),
             label = "وب",
@@ -96,13 +97,13 @@ fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
             secondary = Color(0xFFAA00FF),
             glow = Color(0xFFFF80AB),
             bgCenter = Color(0xFFE040FB).copy(alpha = 0.18f),
-            bgEdge = Color(0xFF1A0022),
+            bgEdge = pageBg,
             ringBrush = Brush.sweepGradient(listOf(
                 Color(0xFFFF80AB), Color(0xFFE040FB),
                 Color(0xFFAA00FF), Color(0xFFE040FB), Color(0xFFFF80AB)
             )),
             bgBrush = Brush.radialGradient(
-                listOf(Color(0xFFE040FB).copy(alpha = 0.15f), Color(0xFF1A0022), Color.Black),
+                listOf(Color(0xFFE040FB).copy(alpha = 0.15f), pageBg),
                 radius = 900f
             ),
             label = "سوشیال",
@@ -114,13 +115,13 @@ fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
             secondary = Color(0xFFFF8F00),
             glow = Color(0xFFFFE082),
             bgCenter = Color(0xFFFFB300).copy(alpha = 0.18f),
-            bgEdge = Color(0xFF1A1100),
+            bgEdge = pageBg,
             ringBrush = Brush.sweepGradient(listOf(
                 Color(0xFFFFE082), Color(0xFFFFB300),
                 Color(0xFFFF8F00), Color(0xFFFFB300), Color(0xFFFFE082)
             )),
             bgBrush = Brush.radialGradient(
-                listOf(Color(0xFFFFB300).copy(alpha = 0.15f), Color(0xFF1A1100), Color.Black),
+                listOf(Color(0xFFFFB300).copy(alpha = 0.15f), pageBg),
                 radius = 900f
             ),
             label = "پروکسی",

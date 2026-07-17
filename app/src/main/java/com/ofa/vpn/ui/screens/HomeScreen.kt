@@ -50,6 +50,7 @@ import com.ofa.vpn.ui.HomeViewModel
 import com.ofa.vpn.ui.navigation.NavRoutes
 import com.ofa.vpn.ui.theme.DarkBackground
 import com.ofa.vpn.ui.theme.DarkSurface
+import com.ofa.vpn.ui.theme.DarkSurfaceVariant
 import com.ofa.vpn.ui.theme.TextGray
 import com.ofa.vpn.ui.theme.TextWhite
 import com.ofa.vpn.ui.theme.modeVisual
@@ -86,13 +87,14 @@ fun HomeScreen(
     }
 
     val visual = modeVisual(selectedMode)
-    val accent = if (isConnected) visual.primary else Color.White
+    val accent = if (isConnected) visual.primary else TextWhite
 
-    // Background gradient
+    // Background gradient — respects light/dark theme
+    val pageBg = DarkBackground
     val bgBrush = Brush.radialGradient(
         colors = listOf(
-            if (isConnected) visual.bgCenter else DarkBackground,
-            Color.Black
+            if (isConnected) visual.bgCenter else pageBg,
+            pageBg
         ),
         radius = 900f
     )
@@ -218,7 +220,9 @@ fun HomeScreen(
                         shape = CircleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DarkSurface,
-                            contentColor = accent
+                            contentColor = accent,
+                            disabledContainerColor = DarkSurfaceVariant,
+                            disabledContentColor = TextGray
                         ),
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = if (isConnected) 12.dp else 8.dp,
