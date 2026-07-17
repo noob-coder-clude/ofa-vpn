@@ -10,6 +10,7 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import java.io.File
 import com.ofa.vpn.core.ConfigParser
 import com.ofa.vpn.core.PingManager
 import com.ofa.vpn.core.XrayCore

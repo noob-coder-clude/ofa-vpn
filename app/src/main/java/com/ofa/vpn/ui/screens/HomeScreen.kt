@@ -38,6 +38,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -445,7 +446,7 @@ private fun ModeSelector(
                 onClick = { onSelect(mode) },
                 label = { Text("${mode.icon} ${visual.label}") },
                 shape = RoundedCornerShape(12.dp),
-                colors = AssistChipDefaults.filterChipColors(
+                colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = visual.primary.copy(alpha = if (isConnected) 0.25f else 0.15f),
                     selectedLabelColor = visual.primary
                 )

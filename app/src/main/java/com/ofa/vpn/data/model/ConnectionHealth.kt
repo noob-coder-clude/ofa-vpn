@@ -1,15 +1,10 @@
-package com.ofa.vpn.data.model
-
-/**
- * وضعیت اتصال VPN
- * based on REAL connection status, not just ping
- */
+// Add ConnectionState enum back to ConnectionHealth.kt
 enum class ConnectionState {
-    DISCONNECTED,      // قطع
+    DISCONNECTED,     // قطع
     CONNECTING,        // در حال اتصال
-    CONNECTED,          // وصل شده
-    RECONNECTING,       // در حال وصل مجدد (fallback)
-    ERROR               // خطا
+    CONNECTED,         // وصل شده
+    RECONNECTING,      // در حال وصل مجدد (fallback)
+    ERROR              // خطا
 }
 
 /**

@@ -2,25 +2,28 @@ package com.ofa.vpn.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ofa.vpn.ui.theme.AccentGreen
+import com.ofa.vpn.ui.theme.DarkSurface
 import com.ofa.vpn.ui.theme.TextGray
 import com.ofa.vpn.ui.theme.TextWhite
 
@@ -30,31 +33,46 @@ import com.ofa.vpn.ui.theme.TextWhite
  * هدف: شفافیت کامل — OFA VPN فقط یه کلاینت محلیه،
  * هیچ داده‌ای جمع‌آوری نمی‌کنه.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TermsScreen(
     onBack: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("قوانین و حریم خصوصی", color = TextWhite) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "بازگشت",
-                            tint = TextWhite
-                        )
-                    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        // Top bar سفارشی (بدون TopAppBar experimental)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = DarkSurface,
+            contentColor = TextWhite
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "بازگشت",
+                        tint = TextWhite
+                    )
                 }
-            )
+                Text(
+                    text = "قوانین و حریم خصوصی",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextWhite
+                )
+                Spacer(modifier = Modifier.width(24.dp))
+            }
         }
-    ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -90,7 +108,7 @@ fun TermsScreen(
 
             Section(
                 title = "مسئولیت کاربر",
-                body = "شما مسئول محتوایی هستید که از طریق این ابزار منتقل می‌کنید. " +
+                body = "شما مسئول محتوایی هستید که از طریق این ابزار منتقل می‌شه. " +
                     "OFA VPN ابزاری خنثی برای اتصاله و هیچ مسئولیتی در قبال " +
                     "استفاده‌ی غیرقانونی نمی‌پذیره."
             )
