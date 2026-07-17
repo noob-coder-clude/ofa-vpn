@@ -14,10 +14,12 @@ import java.io.File
 import com.ofa.vpn.core.ConfigParser
 import com.ofa.vpn.core.PingManager
 import com.ofa.vpn.core.XrayCore
-import com.ofa.vpn.data.model.ConnectionMode
-import com.ofa.vpn.data.model.ConnectionState
 import com.ofa.vpn.data.local.AppDatabase
 import com.ofa.vpn.data.local.ServerDao
+import com.ofa.vpn.data.model.ConnectionMode
+import com.ofa.vpn.data.model.ConnectionState
+import com.ofa.vpn.data.model.Server
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
