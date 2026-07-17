@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Outer ring -->
+    <path
+        android:pathData="M60,10 A50,50 0 1,1 59.9,10"
+        android:strokeWidth="3"
+        android:strokeColor="#FF6B1A"
+        android:fillColor="#00000000" />
+    <!-- Inner ring glow -->
+    <path
+        android:pathData="M60,18 A42,42 0 1,1 59.9,18"
+        android:strokeWidth="1.5"
+        android:strokeColor="#FFD23F"
+        android:strokeAlpha="0.6"
+        android:fillColor="#00000000" />
+    <!-- GT text -->
+    <path
+        android:pathData="M30,48 L30,44 Q30,38 36,38 L48,38 L48,42 L38,42 L38,52 L50,52 L50,56 L36,56 Q30,56 30,50 Z"
+        android:fillColor="#FFD23F" />
+    <path
+        android:pathData="M52,38 L52,70 L58,70 L58,56 L70,56 L72,50 L58,50 Z"
+        android:fillColor="#FFD23F" />
+    <!-- Fire flames (simplified) -->
+    <path
+        android:pathData="M60,2 C58,8 54,6 52,12 C56,10 58,14 56,18 C60,14 62,10 66,14 C64,10 60,8 60,2 Z"
+        android:fillColor="#FF6B1A"
+        android:fillAlpha="0.8" />
+    <path
+        android:pathData="M85,20 C82,26 84,28 80,32 C84,30 86,34 82,36 C86,34 88,30 90,34 C88,30 84,26 85,20 Z"
+        android:fillColor="#FF2D2D"
+        android:fillAlpha="0.7" />
+    <path
+        android:pathData="M30,20 C32,26 34,24 36,30 C32,28 30,32 34,34 C30,32 28,28 26,32 C30,28 32,24 30,20 Z"
+        android:fillColor="#FF2D2D"
+        android:fillAlpha="0.7" />
+    <path
+        android:pathData="M18,45 C22,42 20,38 26,36 C22,40 24,44 20,46 Z"
+        android:fillColor="#FFD23F"
+        android:fillAlpha="0.5" />
+    <path
+        android:pathData="M102,45 C98,42 100,38 94,36 C98,40 96,44 100,46 Z"
+        android:fillColor="#FFD23F"
+        android:fillAlpha="0.5" />
+</vector>

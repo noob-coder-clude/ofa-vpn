@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Outer ring (gray) -->
+    <path
+        android:pathData="M60,12 A48,48 0 1,1 59.9,12"
+        android:strokeWidth="3"
+        android:strokeColor="#8B949E"
+        android:fillColor="#00000000" />
+    <!-- Shield -->
+    <path
+        android:pathData="M60,28 L82,38 L82,58 Q82,72 60,82 Q38,72 38,58 L38,38 Z"
+        android:strokeWidth="2.5"
+        android:strokeColor="#8B949E"
+        android:fillColor="#00000000" />
+    <!-- Network nodes -->
+    <path
+        android:pathData="M48,52 Q60,62 72,52"
+        android:strokeWidth="2.5"
+        android:strokeColor="#8B949E"
+        android:fillColor="#00000000" />
+    <circle android:cx="48" android:cy="52" android:r="3.5" android:fillColor="#8B949E" />
+    <circle android:cx="60" android:cy="63" android:r="3.5" android:fillColor="#8B949E" />
+    <circle android:cx="72" android:cy="52" android:r="3.5" android:fillColor="#8B949E" />
+</vector>
