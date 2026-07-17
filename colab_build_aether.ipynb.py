@@ -73,13 +73,14 @@ def main():
 
         # ۲. Rust
         step("نصب Rust")
-        if not os.path.exists(os.path.expanduser("~/.cargo/bin/cargo")):
+        rustup_path = os.path.expanduser("~/.cargo/bin/rustup")
+        cargo = os.path.expanduser("~/.cargo/bin/cargo")
+        if not os.path.exists(cargo):
             run(["bash","-c",
                  "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"],
                 timeout=300)
         else:
             ok("Rust قبلاً نصب بود")
-        cargo = os.path.expanduser("~/.cargo/bin/cargo")
         env = {"PATH": os.path.expanduser("~/.cargo/bin") + ":" + os.environ.get("PATH","")}
 
         # ۳. Android NDK
@@ -97,7 +98,7 @@ def main():
 
         # ۴. تنظیم target + cargo config
         step("تنظیم Rust target (aarch64-linux-android)")
-        run([cargo,"rustup","target","add","aarch64-linux-android"], timeout=300, env=env)
+        run([rustup_path,"target","add","aarch64-linux-android"], timeout=300, env=env)
         cfg = os.path.expanduser("~/.cargo/config.toml")
         with open(cfg,"w") as f:
             f.write(textwrap.dedent(f"""
