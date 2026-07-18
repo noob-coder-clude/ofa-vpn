@@ -10,6 +10,7 @@ import org.json.JSONObject
 import java.net.URL
 import java.net.URLDecoder
 import java.util.Base64
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 /**
@@ -166,6 +167,9 @@ class SubFetcher(
 
     private fun parseUri(uri: String, subId: Long, index: Int): Server? {
         return try {
+            if (uri.trim().startsWith("vmess://", ignoreCase = true)) {
+                return parseVmess(uri.substringAfter("://"), subId, index)
+            }
             val cleanUri = uri.replace("vmess://", "https://")
                 .replace("vless://", "https://")
                 .replace("trojan://", "https://")
@@ -203,6 +207,19 @@ class SubFetcher(
             null
         }
     }
+
+    private fun parseVmess(encoded: String, subId: Long, index: Int): Server? = try {
+        val normalized = encoded.trim().replace("-", "+").replace("_", "/")
+        val padded = normalized + "=".repeat((4 - normalized.length % 4) % 4)
+        val json = JSONObject(String(Base64.getDecoder().decode(padded), StandardCharsets.UTF_8))
+        val address = json.optString("add")
+        if (address.isBlank()) null else {
+            val port = json.optInt("port", 443)
+            val remark = json.optString("ps").ifBlank { "$address:$port" }
+            Server(name = remark, protocol = "vmess", address = address, port = port,
+                uuid = json.optString("id"), remark = remark, rawUri = "vmess://$encoded", subscriptionId = subId)
+        }
+    } catch (_: Exception) { null }
 
     private fun defaultPort(protocol: String): Int = when (protocol) {
         "vless" -> 443
