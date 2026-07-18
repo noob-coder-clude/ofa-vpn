@@ -54,15 +54,17 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log | tail -80
+        run: |
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee /tmp/build.log
+          echo "==== BUILD EXIT CODE: $? ===="
 
       - name: Show compile errors if failed
         if: failure()
         run: |
-          echo "==== last 100 lines of build log ===="
-          tail -100 /tmp/build.log || true
-          echo "==== kotlin errors ===="
-          grep -E "^e:|error:|FAILED|What went wrong" /tmp/build.log || true
+          echo "==== Kotlin compile errors ===="
+          grep -E "^e: |error:|FAILED|What went wrong|Compilation error|unresolved|expecting|type mismatch|none of|overload" /tmp/build.log || true
+          echo "==== last 60 lines ===="
+          tail -60 /tmp/build.log || true
 
       - name: Upload APK artifact
         if: success()
