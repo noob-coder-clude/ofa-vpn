@@ -109,6 +109,22 @@ fun modeVisual(mode: com.ofa.vpn.data.model.ConnectionMode): ModeVisual {
             label = "سوشیال",
             shortLabel = "SOC"
         )
+        com.ofa.vpn.data.model.ConnectionMode.AETHER -> ModeVisual(
+            name = "Aether",
+            primary = Color(0xFF00BCD4), secondary = Color(0xFF0097A7),
+            glow = Color(0xFF80DEEA), bgCenter = Color(0xFF00BCD4).copy(alpha = 0.18f),
+            bgEdge = pageBg,
+            ringBrush = Brush.sweepGradient(listOf(Color(0xFF80DEEA), Color(0xFF00BCD4), Color(0xFF0097A7), Color(0xFF00BCD4))),
+            bgBrush = Brush.radialGradient(listOf(Color(0xFF00BCD4).copy(alpha = 0.15f), pageBg), radius = 900f),
+            label = "آثر", shortLabel = "AETHER"
+        )
+        com.ofa.vpn.data.model.ConnectionMode.AETHER -> ModeVisual(
+            name = "Aether", primary = Color(0xFF00BCD4), secondary = Color(0xFF0097A7),
+            glow = Color(0xFF80DEEA), bgCenter = Color(0xFF00BCD4).copy(alpha = 0.18f), bgEdge = pageBg,
+            ringBrush = Brush.sweepGradient(listOf(Color(0xFF80DEEA), Color(0xFF00BCD4), Color(0xFF0097A7))),
+            bgBrush = Brush.radialGradient(listOf(Color(0xFF00BCD4).copy(alpha = 0.15f), pageBg), radius = 900f),
+            label = "آثر", shortLabel = "AETHER"
+        )
         com.ofa.vpn.data.model.ConnectionMode.PROXY -> ModeVisual(
             name = "Proxy",
             primary = Color(0xFFFFB300),

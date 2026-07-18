@@ -73,7 +73,7 @@ fun SplashScreen(
                 Brush.radialGradient(
                     colors = listOf(
                         AccentGreen.copy(alpha = 0.08f),
-                        DarkBackground
+                        MaterialTheme.colorScheme.background
                     ),
                     radius = 900f
                 )
@@ -97,7 +97,7 @@ fun SplashScreen(
             Text(
                 text = "OFA VPN",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextWhite,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp,
                 modifier = Modifier.alpha(titleAlpha.value)
