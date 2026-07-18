@@ -79,7 +79,7 @@ fun ServersScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         if (servers.isEmpty()) {
             EmptyServersState(onAddClick = {
-                viewModel.addFromSubscription()
+                onNavigate(com.ofa.vpn.ui.navigation.NavRoutes.SETTINGS)
             })
         } else {
             LazyColumn(
@@ -112,7 +112,7 @@ fun ServersScreen(
 
         // FAB — add from subscription
         FloatingActionButton(
-            onClick = { viewModel.addFromSubscription() },
+            onClick = { onNavigate(com.ofa.vpn.ui.navigation.NavRoutes.SETTINGS) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(20.dp),
