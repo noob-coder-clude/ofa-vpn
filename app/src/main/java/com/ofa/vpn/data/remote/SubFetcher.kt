@@ -166,20 +166,72 @@ class SubFetcher(
 
     private fun parseUri(uri: String, subId: Long, index: Int): Server? {
         return try {
-            val cleanUri = uri.replace("vmess://", "https://")
+            when {
+                uri.startsWith("vmess://") -> parseVmess(uri, subId, index)
+                uri.startsWith("vless://") -> parseVlessOrTrojan(uri, subId, index, "vless")
+                uri.startsWith("trojan://") -> parseVlessOrTrojan(uri, subId, index, "trojan")
+                uri.startsWith("hysteria2://") || uri.startsWith("hy2://") ->
+                    parseVlessOrTrojan(uri, subId, index, "hysteria2")
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * vmess:// فرمت: base64(json) — نه URL
+     * JSON: {"v":"2","ps":"name","add":"host","port":"443","id":"uuid","aid":"0",
+     *        "net":"ws","type":"none","host":"","path":"/","tls":"tls","sni":""}
+     */
+    private fun parseVmess(uri: String, subId: Long, index: Int): Server? {
+        return try {
+            val b64 = uri.removePrefix("vmess://").trim()
+            // base64 decode — بعضی ساب‌ها padding ندارن
+            val padded = b64 + "=".repeat((4 - b64.length % 4) % 4)
+            val json = String(Base64.getDecoder().decode(padded))
+            val obj = JSONObject(json)
+
+            val address = obj.getString("add")
+            val port = obj.optInt("port", obj.optString("port", "443").toIntOrNull() ?: 443)
+            val uuid = obj.getString("id")
+            val remark = obj.optString("ps", "")
+            val network = obj.optString("net", "tcp")
+            val tls = obj.optString("tls", "")
+            val sni = obj.optString("sni", obj.optString("host", ""))
+            val host = obj.optString("host", "")
+            val path = obj.optString("path", "/")
+
+            // ساخت rawUri برای ConfigParser
+            val rawUri = "vmess://$b64"
+
+            Server(
+                name = if (remark.isNotEmpty()) remark else "$address:$port",
+                protocol = "vmess",
+                address = address,
+                port = port,
+                uuid = uuid,
+                remark = remark,
+                rawUri = rawUri,
+                subscriptionId = subId
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * vless:// و trojan:// و hysteria2:// — فرمت URL دارن
+     */
+    private fun parseVlessOrTrojan(uri: String, subId: Long, index: Int, protocol: String): Server? {
+        return try {
+            val cleanUri = uri
                 .replace("vless://", "https://")
                 .replace("trojan://", "https://")
                 .replace("hysteria2://", "https://")
+                .replace("hy2://", "https://")
 
             val url = URL(cleanUri)
-
-            val protocol = when {
-                uri.startsWith("vless://") -> "vless"
-                uri.startsWith("trojan://") -> "trojan"
-                uri.startsWith("vmess://") -> "vmess"
-                uri.startsWith("hysteria2://") -> "hysteria2"
-                else -> "unknown"
-            }
 
             val query = url.query ?: ""
             val params = query.split("&")
@@ -189,12 +241,19 @@ class SubFetcher(
 
             val remark = params["remarks"] ?: params["remark"] ?: params["sni"] ?: ""
 
+            // برای trojan، uuid = password (بخش userinfo URL)
+            val uuid = when (protocol) {
+                "trojan" -> url.userInfo ?: params["password"] ?: ""
+                else -> params["id"] ?: params["password"] ?: ""
+            }
+
             Server(
-                name = if (remark.isNotEmpty()) URLDecoder.decode(remark, "UTF-8") else "${url.host}:${if (url.port > 0) url.port else defaultPort(protocol)}",
+                name = if (remark.isNotEmpty()) URLDecoder.decode(remark, "UTF-8")
+                      else "${url.host}:${if (url.port > 0) url.port else defaultPort(protocol)}",
                 protocol = protocol,
                 address = url.host,
                 port = if (url.port > 0) url.port else defaultPort(protocol),
-                uuid = params["id"] ?: params["password"] ?: "",
+                uuid = uuid,
                 remark = if (remark.isNotEmpty()) URLDecoder.decode(remark, "UTF-8") else "",
                 rawUri = uri,
                 subscriptionId = subId

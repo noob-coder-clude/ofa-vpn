@@ -29,3 +29,24 @@
 
 # Keep data models
 -keep class com.ofa.vpn.data.model.** { *; }
+-keep class com.ofa.vpn.data.local.** { *; }
+
+# VPN service + core — نباید obfuscate بشن
+-keep class com.ofa.vpn.service.VpnConnectionService { *; }
+-keep class com.ofa.vpn.core.XrayCore { *; }
+-keep class com.ofa.vpn.core.aether.AetherManager { *; }
+-keep class com.ofa.vpn.core.ConfigParser { *; }
+-keep class com.ofa.vpn.core.PingManager { *; }
+
+# Hilt @Inject constructors
+-keepclassmembers class * {
+    @javax.inject.Inject <init>(...);
+}
+
+# JSON
+-keep class org.json.** { *; }
+
+# Keep native methods
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

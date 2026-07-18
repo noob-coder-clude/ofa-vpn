@@ -65,7 +65,7 @@ class HomeViewModel @Inject constructor(
         if (intent != null) {
             return intent
         }
-        startVpnService(ctx)
+        connectAfterPermission()
         return null
     }
 
@@ -103,10 +103,20 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun startVpnService(ctx: Context) {
-        // اول سرورها رو تزریق کن
         viewModelScope.launch {
+            // اول سرورها رو از DB بخون و fallback chain بساز
             val servers = subscriptionRepository.getAllServers().first()
-            VpnConnectionManager.setFallbackChain(servers)
+            if (servers.isEmpty()) {
+                // اگه سروری نیست، سرویس رو شروع نکن
+                _vpnState.value = ConnectionState.ERROR
+                return@launch
+            }
+            // انتخاب بهترین سرور با PingManager
+            val best = pingManager.selectBest(servers, _selectedMode.value)
+            VpnConnectionManager.setFallbackChain(
+                if (best != null) listOf(best) + servers.filter { it.id != best.id }
+                else servers
+            )
 
             // بعد سرویس رو شروع کن
             ctx.startService(Intent(ctx, VpnConnectionService::class.java).apply {
