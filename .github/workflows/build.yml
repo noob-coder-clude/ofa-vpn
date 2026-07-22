@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # دسترسی لازم برای ساخت Release
     steps:
       - uses: actions/checkout@v4
       
@@ -34,8 +36,16 @@ jobs:
       - name: Build Debug APK (Signed)
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk OFA-VPN.apk
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v1
         with:
-          name: ofa-vpn-signed-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          tag_name: latest-build
+          name: Latest APK Build
+          body: "Automated build from latest commit."
+          prerelease: false
+          files: OFA-VPN.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
