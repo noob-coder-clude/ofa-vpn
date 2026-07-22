@@ -52,14 +52,19 @@ class VpnConnectionService : VpnService() {
                 return
             }
 
-            // ۳. اجرای tun2socks و دادن شناسه TUN بهش
+            // ۳. اجرای tun2socks
             val tun2socksBinary = File(applicationInfo.nativeLibraryDir, "libtun2socks.so")
             if (tun2socksBinary.exists()) {
-                val tunFd = vpnInterface!!.detachFd() // گرفتن شناسه رابط
-                val t2sConfig = File(filesDir, "t2s.conf")
-                t2sConfig.writeText("[Common]\nWorker=4\n[Socket]\nTunFD=${tunFd}\nTunMTU=1500\n[Proxy]\nAddress=127.0.0.1\nPort=10808\n")
-
-                val pb = ProcessBuilder(tun2socksBinary.absolutePath, t2sConfig.absolutePath).redirectErrorStream(true)
+                val tunFd = vpnInterface!!.detachFd() // گرفتن شناسه رابط TUN
+                
+                // باینری xjasonlyu/tun2socks با سوئیچ -fd شناسه رو میگیره
+                val pb = ProcessBuilder(
+                    tun2socksBinary.absolutePath,
+                    "-device", "fd://$tunFd",
+                    "-proxy", "socks5://127.0.0.1:10808",
+                    "-loglevel", "warning"
+                ).redirectErrorStream(true)
+                
                 tun2socksProcess = pb.start()
                 
                 Thread { tun2socksProcess?.inputStream?.bufferedReader()?.use { r -> var l: String?; while (r.readLine().also { l = it } != null) Log.i("Tun2Socks", l ?: "") } }.start()
