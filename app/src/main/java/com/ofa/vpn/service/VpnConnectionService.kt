@@ -4,16 +4,14 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import com.ofa.vpn.core.ConfigBuilder
-import com.ofa.vpn.core.XrayCore
+import com.ofa.vpn.core.MihomoConfigBuilder
 import com.ofa.vpn.data.local.ServerEntity
 import com.google.gson.Gson
 import java.io.File
 
 class VpnConnectionService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
-    private var xrayCore: XrayCore? = null
-    private var tun2socksProcess: Process? = null
+    private var mihomoProcess: Process? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -32,7 +30,6 @@ class VpnConnectionService : VpnService() {
     private fun startVpn(server: ServerEntity) {
         if (vpnInterface != null) return
         try {
-            // ۱. ساخت رابط TUN
             val builder = Builder()
             builder.setSession("OFA_VPN_Session")
             builder.addAddress("10.0.0.2", 30)
@@ -43,34 +40,30 @@ class VpnConnectionService : VpnService() {
 
             if (vpnInterface == null) { stopSelf(); return }
 
-            // ۲. اجرای Xray
-            val config = ConfigBuilder.build(server)
-            xrayCore = XrayCore(this)
-            if (!xrayCore!!.start(config)) {
-                Log.e("VpnService", "Xray failed to start.")
-                stopVpn()
-                return
-            }
-
-            // ۳. اجرای tun2socks
-            val tun2socksBinary = File(applicationInfo.nativeLibraryDir, "libtun2socks.so")
-            if (tun2socksBinary.exists()) {
-                val tunFd = vpnInterface!!.detachFd()
+            val tunFd = vpnInterface!!.detachFd()
+            val mihomoBinary = File(applicationInfo.nativeLibraryDir, "libmihomo.so")
+            
+            if (mihomoBinary.exists()) {
+                val workDir = File(filesDir, "mihomo_data")
+                workDir.mkdirs()
+                val configFile = File(workDir, "config.yaml")
                 
-                // باینری xjasonlyu/tun2socks با سوئیچ -fd شناسه رو میگیره
+                val configYaml = MihomoConfigBuilder.build(server, tunFd)
+                configFile.writeText(configYaml)
+                
                 val pb = ProcessBuilder(
-                    tun2socksBinary.absolutePath,
-                    "-device", "fd://$tunFd",
-                    "-proxy", "socks5://127.0.0.1:10808",
-                    "-loglevel", "warning"
+                    mihomoBinary.absolutePath, 
+                    "-f", configFile.absolutePath, 
+                    "-d", workDir.absolutePath
                 ).redirectErrorStream(true)
                 
-                tun2socksProcess = pb.start()
+                mihomoProcess = pb.start()
                 
-                Thread { tun2socksProcess?.inputStream?.bufferedReader()?.use { r -> var l: String?; while (r.readLine().also { l = it } != null) Log.i("Tun2Socks", l ?: "") } }.start()
-                Log.i("VpnService", "tun2socks started with FD: $tunFd")
+                Thread { mihomoProcess?.inputStream?.bufferedReader()?.use { r -> var l: String?; while (r.readLine().also { l = it } != null) Log.i("Mihomo", l ?: "") } }.start()
+                Log.i("VpnService", "Mihomo started with TUN FD: $tunFd")
             } else {
-                Log.e("VpnService", "libtun2socks.so not found!")
+                Log.e("VpnService", "libmihomo.so not found!")
+                stopVpn()
             }
 
         } catch (e: Exception) {
@@ -81,10 +74,8 @@ class VpnConnectionService : VpnService() {
 
     private fun stopVpn() {
         try {
-            tun2socksProcess?.destroy()
-            tun2socksProcess = null
-            xrayCore?.stop()
-            xrayCore = null
+            mihomoProcess?.destroy()
+            mihomoProcess = null
             vpnInterface?.close()
             vpnInterface = null
             Log.i("VpnService", "VPN Stopped completely.")
