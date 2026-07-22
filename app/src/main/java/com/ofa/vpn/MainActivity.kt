@@ -1,4 +1,5 @@
 package com.ofa.vpn
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,12 +18,14 @@ import com.ofa.vpn.data.remote.SubFetcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { MaterialTheme { Surface(modifier = Modifier.fillMaxSize()) { VpnAppScreen() } } }
     }
 }
+
 @Composable
 fun VpnAppScreen() {
     val context = LocalContext.current
@@ -32,17 +35,39 @@ fun VpnAppScreen() {
     var subUrl by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("OFA VPN - Servers", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(value = subUrl, onValueChange = { subUrl = it }, label = { Text("Subscription URL") }, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = { if (subUrl.isNotBlank()) { isLoading = true; statusMessage = "Fetching..."; scope.launch { try { val s = withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(subUrl) }; withContext(Dispatchers.IO) { db.serverDao().deleteAll() }; withContext(Dispatchers.IO) { db.serverDao().insertAll(s) }; statusMessage = "Added ${s.size} servers." } catch (e: Exception) { statusMessage = "Error: ${e.message}" } finally { isLoading = false } } } }, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) { Text(if (isLoading) "Loading..." else "Fetch Subscription") }
+        
+        Button(onClick = { 
+            if (subUrl.isNotBlank()) { 
+                isLoading = true; statusMessage = "Fetching..."; 
+                scope.launch { 
+                    try { 
+                        val s = withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(subUrl) }
+                        if (s.isEmpty()) { statusMessage = "No servers found! (Invalid sub or bad format)" }
+                        else {
+                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                            withContext(Dispatchers.IO) { db.serverDao().insertAll(s) }
+                            statusMessage = "Success! Added ${s.size} servers."
+                        }
+                    } catch (e: Exception) { 
+                        statusMessage = "Error: ${e.message ?: "Unknown error"}" 
+                    } finally { isLoading = false } 
+                } 
+            } 
+        }, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) { Text(if (isLoading) "Loading..." else "Fetch Subscription") }
+        
         Text(text = statusMessage, color = MaterialTheme.colorScheme.error)
         Spacer(modifier = Modifier.height(16.dp))
+        
         LazyColumn(modifier = Modifier.fillMaxSize()) { items(servers) { ServerCard(it) } }
     }
 }
+
 @Composable
 fun ServerCard(server: ServerEntity) {
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
