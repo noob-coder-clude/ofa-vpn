@@ -10,9 +10,26 @@ android {
         applicationId = "com.ofa.vpn"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.0-release"
         ndk { abiFilters += "arm64-v8a" }
+    }
+    signingConfigs {
+        create("release") {
+            storeFile = file("ofa.keystore")
+            storePassword = "123456"
+            keyAlias = "ofa"
+            keyPassword = "123456"
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+        }
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.4" }
