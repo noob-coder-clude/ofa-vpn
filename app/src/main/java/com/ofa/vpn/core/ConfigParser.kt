@@ -4,7 +4,6 @@ import android.util.Base64
 import com.ofa.vpn.data.local.ServerEntity
 import org.json.JSONArray
 import org.json.JSONObject
-import org.yaml.snakeyaml.Yaml
 import java.net.URLDecoder
 
 object ConfigParser {
@@ -15,54 +14,44 @@ object ConfigParser {
 
         try {
             when {
-                // ۱. پشتیبانی از فرمت Clash (YAML)
-                cleanContent.contains("proxies:") -> parseClashYaml(cleanContent, servers)
+                // ۱. پشتیبانی از فرمت Clash با Regex
+                cleanContent.contains("proxies:") -> parseClashWithRegex(cleanContent, servers)
                 
-                // ۲. پشتیبانی از فرمت JSON
+                // ۲. پشتیبانی از JSON
                 cleanContent.startsWith("[") || cleanContent.startsWith("{") -> parseJson(cleanContent, servers)
                 
                 // ۳. پشتیبانی از Base64 و متن خام
                 else -> parseBase64OrPlain(cleanContent, servers)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            // دیگه سکوت نمی‌کنه! ارور رو پرت می‌کنه بیرون تا تو UI نشونش بدیم
+            throw Exception("Parse Error: ${e.message}")
         }
         return servers
     }
 
-    private fun parseClashYaml(content: String, servers: MutableList<ServerEntity>) {
-        val yaml = Yaml()
-        val data = yaml.load<Map<String, Any>>(content)
-        val proxies = data["proxies"] as? List<Map<String, Any>> ?: return
+    private fun parseClashWithRegex(content: String, servers: MutableList<ServerEntity>) {
+        // پیدا کردن بلاک‌های پروکسی با Regex
+        val proxyRegex = Regex("(?s)- \\{.*?name: (.*?)\\n.*?type: (.*?)\\n.*?server: (.*?)\\n.*?port: (.*?)\\n.*?(?:uuid: (.*?)\\n)?.*?\\}")
         
-        for (proxy in proxies) {
+        proxyRegex.findAll(content).forEach { match ->
             try {
-                val type = proxy["type"] as? String ?: continue
-                val name = proxy["name"] as? String ?: "Unknown"
-                val server = proxy["server"] as? String ?: continue
-                val port = (proxy["port"] as? Int) ?: continue
+                val name = match.groupValues[1].trim().replace("\"", "")
+                val type = match.groupValues[2].trim()
+                val server = match.groupValues[3].trim()
+                val port = match.groupValues[4].trim().toIntOrNull() ?: return@forEach
+                val uuid = match.groupValues[5].trim()
 
-                if (type == "vmess") {
-                    // تبدیل کلش به فرمت VMess Base64 برای استفاده در Xray
-                    val vmessJson = JSONObject()
-                    vmessJson.put("v", "2")
-                    vmessJson.put("ps", name)
-                    vmessJson.put("add", server)
-                    vmessJson.put("port", port)
-                    vmessJson.put("id", proxy["uuid"] as? String ?: "")
-                    vmessJson.put("aid", (proxy["alterId"] as? Int) ?: 0)
-                    vmessJson.put("net", proxy["network"] as? String ?: "tcp")
-                    vmessJson.put("tls", if (proxy["tls"] as? Boolean == true) "tls" else "")
-                    vmessJson.put("sni", proxy["servername"] as? String ?: server)
-                    
-                    val b64 = Base64.encodeToString(vmessJson.toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-                    val rawUri = "vmess://$b64"
-                    servers.add(ServerEntity(name=name, protocol="vmess", address=server, port=port, uuid=vmessJson.optString("id"), rawUri=rawUri))
-                } 
-                else if (type == "vless") {
-                    val uuid = proxy["uuid"] as? String ?: continue
-                    val rawUri = "vless://$uuid@$server:$port?encryption=none#${URLDecoder.decode(name, "UTF-8")}"
-                    servers.add(ServerEntity(name=name, protocol="vless", address=server, port=port, uuid=uuid, rawUri=rawUri))
+                if (type == "vmess" || type == "vless") {
+                    val rawUri = if (type == "vmess") {
+                        val vmessJson = JSONObject()
+                        vmessJson.put("v", "2"); vmessJson.put("ps", name); vmessJson.put("add", server); vmessJson.put("port", port)
+                        vmessJson.put("id", uuid); vmessJson.put("aid", 0); vmessJson.put("net", "tcp"); vmessJson.put("tls", "")
+                        "vmess://" + Base64.encodeToString(vmessJson.toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+                    } else {
+                        "vless://$uuid@$server:$port?encryption=none#$name"
+                    }
+                    servers.add(ServerEntity(name=name, protocol=type, address=server, port=port, uuid=uuid, rawUri=rawUri))
                 }
             } catch (e: Exception) {}
         }
@@ -73,12 +62,9 @@ object ConfigParser {
             val array = JSONArray(content)
             for (i in 0 until array.length()) {
                 val item = array.optJSONObject(i)
-                if (item != null) {
-                    // اگر آیتم‌ها خودشون فرمت VMess JSON داشتن
-                    if (item.has("add") && item.has("id")) {
-                        val b64 = Base64.encodeToString(item.toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-                        servers.add(ServerEntity(name=item.optString("ps","VMess"), protocol="vmess", address=item.optString("add"), port=item.optInt("port"), uuid=item.optString("id"), rawUri="vmess://$b64"))
-                    }
+                if (item != null && item.has("add") && item.has("id")) {
+                    val b64 = Base64.encodeToString(item.toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+                    servers.add(ServerEntity(name=item.optString("ps","VMess"), protocol="vmess", address=item.optString("add"), port=item.optInt("port"), uuid=item.optString("id"), rawUri="vmess://$b64"))
                 } else {
                     val str = array.optString(i)
                     if (str.startsWith("vmess://") || str.startsWith("vless://")) parseBase64OrPlain(str, servers)
