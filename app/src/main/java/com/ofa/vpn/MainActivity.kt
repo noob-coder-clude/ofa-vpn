@@ -22,6 +22,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.google.gson.Gson
 import com.ofa.vpn.core.ConfigParser
+import com.ofa.vpn.core.UpdateManager
 import com.ofa.vpn.data.local.AppDatabase
 import com.ofa.vpn.data.local.ServerEntity
 import com.ofa.vpn.data.remote.SubFetcher
@@ -44,6 +45,7 @@ fun VpnAppScreen() {
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     val servers by db.serverDao().getAllServers().collectAsState(initial = emptyList())
+    val updateManager = remember { UpdateManager(context) }
     
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -51,6 +53,7 @@ fun VpnAppScreen() {
     var errorLogs by remember { mutableStateOf(listOf<String>()) }
     var showErrors by remember { mutableStateOf(false) }
     var selectedServer by remember { mutableStateOf<ServerEntity?>(null) }
+    var updateStatus by remember { mutableStateOf("") }
 
     val vpnLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
@@ -79,7 +82,20 @@ fun VpnAppScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("OFA VPN", style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("OFA VPN", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            OutlinedButton(onClick = { 
+                updateStatus = "Downloading core..."
+                updateManager.downloadAndInstallCore { success, msg ->
+                    updateStatus = if (success) "Core updated!" else "Failed: $msg"
+                }
+            }) {
+                Text("Update Core")
+            }
+        }
+        if (updateStatus.isNotEmpty()) {
+            Text(updateStatus, color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp)
+        }
         Spacer(modifier = Modifier.height(16.dp))
         
         OutlinedTextField(
@@ -95,24 +111,16 @@ fun VpnAppScreen() {
                 isLoading = true; statusMessage = "Processing..."; errorLogs = emptyList()
                 scope.launch { 
                     val trimmedInput = inputText.trim()
-                    
-                    // اگه با http شروع نشد، یعنی کانفیگ مستقیمه (JSON یا vmess://)
                     if (!trimmedInput.startsWith("http://") && !trimmedInput.startsWith("https://")) {
                         try {
                             val parsedServers = ConfigParser.parseSubscription(trimmedInput)
-                            if (parsedServers.isEmpty()) {
-                                statusMessage = "No valid servers found in input."
-                            } else {
-                                withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
-                                withContext(Dispatchers.IO) { db.serverDao().insertAll(parsedServers) }
-                                statusMessage = "Added ${parsedServers.size} config(s)."
-                            }
+                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                            withContext(Dispatchers.IO) { db.serverDao().insertAll(parsedServers) }
+                            statusMessage = "Added ${parsedServers.size} config(s)."
                         } catch (e: Exception) {
                             statusMessage = "Parse Error: ${e.message}"
                         }
-                    } 
-                    // اگه لینک سابسکریپشن بود
-                    else {
+                    } else {
                         val urls = trimmedInput.split("\n", "\r").map { it.trim() }.filter { it.isNotEmpty() }
                         val allServers = mutableListOf<ServerEntity>()
                         val errors = mutableListOf<String>()
