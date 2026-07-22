@@ -10,8 +10,8 @@ android {
         applicationId = "com.ofa.vpn"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.0-release"
+        versionCode = 4
+        versionName = "1.0-signed-debug"
         ndk { abiFilters += "arm64-v8a" }
     }
     signingConfigs {
@@ -23,10 +23,6 @@ android {
         }
     }
     buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
-        }
         getByName("debug") {
             signingConfig = signingConfigs.getByName("release")
         }

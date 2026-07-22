@@ -31,11 +31,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon
+      - name: Build Debug APK (Signed)
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ofa-vpn-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: ofa-vpn-signed-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
