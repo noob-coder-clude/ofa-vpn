@@ -12,7 +12,7 @@ object ConfigParser {
         
         val decodedContent = try {
             if (!rawContent.startsWith("vmess://") && !rawContent.startsWith("vless://")) {
-                val cleanB64 = rawContent.replace("\n", "").replace(" ", "").trim()
+                val cleanB64 = rawContent.replace("\\n", "").replace(" ", "").trim()
                 String(Base64.decode(cleanB64, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING))
             } else {
                 rawContent
@@ -21,9 +21,7 @@ object ConfigParser {
             rawContent
         }
 
-        val lines = decodedContent.split("\n", "
-", "
-", "")
+        val lines = decodedContent.split("\\n", "\r\n", "\n", "\r")
         
         lines.forEach { line ->
             val uri = line.trim()

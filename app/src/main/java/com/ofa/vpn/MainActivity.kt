@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,38 +34,59 @@ fun VpnAppScreen() {
     val db = remember { AppDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
     val servers by db.serverDao().getAllServers().collectAsState(initial = emptyList())
-    var subUrl by remember { mutableStateOf("") }
+    var bulkUrls by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
+    var errorLogs by remember { mutableStateOf(listOf<String>()) }
+    var showErrors by remember { mutableStateOf(false) }
+
+    if (showErrors) {
+        AlertDialog(
+            onDismissRequest = { showErrors = false },
+            title = { Text("Log of Failed Links") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    if (errorLogs.isEmpty()) { Text("No errors!") } 
+                    else { errorLogs.forEach { err -> Text("- $err\n", style = MaterialTheme.typography.bodySmall) } }
+                }
+            },
+            confirmButton = { Button(onClick = { showErrors = false }) { Text("Close") } }
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("OFA VPN - Servers", style = MaterialTheme.typography.headlineSmall)
+        Text("OFA VPN - Bulk Import", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(value = subUrl, onValueChange = { subUrl = it }, label = { Text("Subscription URL") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = bulkUrls, onValueChange = { bulkUrls = it }, label = { Text("Paste Sub URLs (One per line)") }, modifier = Modifier.fillMaxWidth().height(120.dp))
         Spacer(modifier = Modifier.height(8.dp))
-        
         Button(onClick = { 
-            if (subUrl.isNotBlank()) { 
-                isLoading = true; statusMessage = "Fetching..."; 
+            if (bulkUrls.isNotBlank()) { 
+                isLoading = true; statusMessage = "Fetching..."; errorLogs = emptyList()
                 scope.launch { 
-                    try { 
-                        val s = withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(subUrl) }
-                        if (s.isEmpty()) { statusMessage = "No servers found! (Invalid sub or bad format)" }
-                        else {
-                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
-                            withContext(Dispatchers.IO) { db.serverDao().insertAll(s) }
-                            statusMessage = "Success! Added ${s.size} servers."
-                        }
-                    } catch (e: Exception) { 
-                        statusMessage = "Error: ${e.message ?: "Unknown error"}" 
-                    } finally { isLoading = false } 
+                    val urls = bulkUrls.split("\n", "\r").map { it.trim() }.filter { it.isNotEmpty() }
+                    val allServers = mutableListOf<ServerEntity>()
+                    val errors = mutableListOf<String>()
+                    for (url in urls) {
+                        try { allServers.addAll(withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(url) }) } 
+                        catch (e: Exception) { errors.add("$url -> ${e.message ?: "Unknown"}") }
+                    }
+                    if (allServers.isEmpty() && errors.isNotEmpty()) { statusMessage = "All links failed! Check log." }
+                    else {
+                        withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                        withContext(Dispatchers.IO) { db.serverDao().insertAll(allServers) }
+                        statusMessage = "Added ${allServers.size} servers. (${errors.size} failed)"
+                    }
+                    errorLogs = errors
+                    isLoading = false 
                 } 
             } 
-        }, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) { Text(if (isLoading) "Loading..." else "Fetch Subscription") }
+        }, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) { Text(if (isLoading) "Loading..." else "Fetch All Subscriptions") }
         
-        Text(text = statusMessage, color = MaterialTheme.colorScheme.error)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top=8.dp)) {
+            Text(text = statusMessage, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+            if (errorLogs.isNotEmpty()) { OutlinedButton(onClick = { showErrors = true }) { Text("View Error Log") } }
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        
         LazyColumn(modifier = Modifier.fillMaxSize()) { items(servers) { ServerCard(it) } }
     }
 }
