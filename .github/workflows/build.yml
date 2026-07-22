@@ -35,7 +35,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest-build
-          name: Latest APK Build
+          name: Latest APK Build (Aether Core)
           body: "Automated build from latest commit."
           prerelease: false
           files: OFA-VPN.apk

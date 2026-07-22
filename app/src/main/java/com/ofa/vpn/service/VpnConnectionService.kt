@@ -4,15 +4,13 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import com.ofa.vpn.core.MihomoConfigBuilder
-import com.ofa.vpn.core.UpdateManager
 import com.ofa.vpn.data.local.ServerEntity
 import com.google.gson.Gson
 import java.io.File
 
 class VpnConnectionService : VpnService() {
     private var vpnInterface: ParcelFileDescriptor? = null
-    private var mihomoProcess: Process? = null
+    private var aetherProcess: Process? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -31,8 +29,9 @@ class VpnConnectionService : VpnService() {
     private fun startVpn(server: ServerEntity) {
         if (vpnInterface != null) return
         try {
+            // ۱. ساخت رابط TUN
             val builder = Builder()
-            builder.setSession("OFA_VPN_Session")
+            builder.setSession("OFA_Aether_Session")
             builder.addAddress("10.0.0.2", 30)
             builder.addRoute("0.0.0.0", 0)
             builder.addDnsServer("1.1.1.1")
@@ -42,32 +41,32 @@ class VpnConnectionService : VpnService() {
             if (vpnInterface == null) { stopSelf(); return }
 
             val tunFd = vpnInterface!!.detachFd()
+            val aetherBinary = File(applicationInfo.nativeLibraryDir, "libaether.so")
             
-            // استفاده از UpdateManager برای پیدا کردن مسیر فایل اجرایی
-            val updateManager = UpdateManager(this)
-            val mihomoBinary = File(updateManager.getActiveCorePath())
-            
-            if (mihomoBinary.exists()) {
-                mihomoBinary.setExecutable(true, true)
-                val workDir = File(filesDir, "mihomo_data")
+            if (aetherBinary.exists()) {
+                aetherBinary.setExecutable(true, true)
+                val workDir = File(filesDir, "aether_data")
                 workDir.mkdirs()
-                val configFile = File(workDir, "config.yaml")
                 
-                val configYaml = MihomoConfigBuilder.build(server, tunFd)
-                configFile.writeText(configYaml)
+                // ذخیره کانفیگ سرور (موقعیت اتصال Aether به کانفیگ بستگی داره)
+                val configFile = File(workDir, "config.json")
+                configFile.writeText(server.rawUri)
                 
+                // اجرای Aether (میتونه با سوئیچ‌های خاص خودش اجرا بشه)
                 val pb = ProcessBuilder(
-                    mihomoBinary.absolutePath, 
+                    aetherBinary.absolutePath, 
                     "-f", configFile.absolutePath, 
-                    "-d", workDir.absolutePath
+                    "-d", workDir.absolutePath,
+                    "-fd", tunFd.toString() // پاس دادن شناسه TUN
                 ).redirectErrorStream(true)
                 
-                mihomoProcess = pb.start()
+                aetherProcess = pb.start()
                 
-                Thread { mihomoProcess?.inputStream?.bufferedReader()?.use { r -> var l: String?; while (r.readLine().also { l = it } != null) Log.i("Mihomo", l ?: "") } }.start()
-                Log.i("VpnService", "Mihomo started from: ${mihomoBinary.absolutePath}")
+                // خوندن لاگ‌های Aether
+                Thread { aetherProcess?.inputStream?.bufferedReader()?.use { r -> var l: String?; while (r.readLine().also { l = it } != null) Log.i("AetherCore", l ?: "") } }.start()
+                Log.i("VpnService", "Aether started with TUN FD: $tunFd")
             } else {
-                Log.e("VpnService", "Mihomo binary not found!")
+                Log.e("VpnService", "libaether.so not found!")
                 stopVpn()
             }
 
@@ -79,8 +78,8 @@ class VpnConnectionService : VpnService() {
 
     private fun stopVpn() {
         try {
-            mihomoProcess?.destroy()
-            mihomoProcess = null
+            aetherProcess?.destroy()
+            aetherProcess = null
             vpnInterface?.close()
             vpnInterface = null
             Log.i("VpnService", "VPN Stopped completely.")
