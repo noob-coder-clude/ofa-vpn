@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.google.gson.Gson
+import com.ofa.vpn.core.ConfigParser
 import com.ofa.vpn.data.local.AppDatabase
 import com.ofa.vpn.data.local.ServerEntity
 import com.ofa.vpn.data.remote.SubFetcher
@@ -43,7 +44,9 @@ fun VpnAppScreen() {
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
     val servers by db.serverDao().getAllServers().collectAsState(initial = emptyList())
-    var bulkUrls by remember { mutableStateOf("") }
+    
+    // متغیرهای ورودی و وضعیت
+    var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
     var errorLogs by remember { mutableStateOf(listOf<String>()) }
@@ -79,30 +82,54 @@ fun VpnAppScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("OFA VPN", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(value = bulkUrls, onValueChange = { bulkUrls = it }, label = { Text("Paste Sub URLs (One per line)") }, modifier = Modifier.fillMaxWidth().height(120.dp))
+        
+        // کادر ورودی (هم برای ساب و هم برای کانفیگ تکی)
+        OutlinedTextField(
+            value = inputText, 
+            onValueChange = { inputText = it }, 
+            label = { Text("Paste Sub URL OR Single Config (vmess/vless)") }, 
+            modifier = Modifier.fillMaxWidth().height(100.dp)
+        )
         Spacer(modifier = Modifier.height(8.dp))
+        
         Button(onClick = { 
-            if (bulkUrls.isNotBlank()) { 
-                isLoading = true; statusMessage = "Fetching..."; errorLogs = emptyList()
+            if (inputText.isNotBlank()) { 
+                isLoading = true; statusMessage = "Processing..."; errorLogs = emptyList()
                 scope.launch { 
-                    val urls = bulkUrls.split("\n", "\r").map { it.trim() }.filter { it.isNotEmpty() }
-                    val allServers = mutableListOf<ServerEntity>()
-                    val errors = mutableListOf<String>()
-                    for (url in urls) {
-                        try { allServers.addAll(withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(url) }) } 
-                        catch (e: Exception) { errors.add("$url -> ${e.message ?: "Unknown"}") }
-                    }
-                    if (allServers.isEmpty() && errors.isNotEmpty()) { statusMessage = "All links failed!" }
+                    val trimmedInput = inputText.trim()
+                    
+                    // اگه کاربر یه کانفیگ تکی داد
+                    if (trimmedInput.startsWith("vmess://") || trimmedInput.startsWith("vless://") || trimmedInput.startsWith("trojan://")) {
+                        try {
+                            val singleServers = ConfigParser.parseSubscription(trimmedInput)
+                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                            withContext(Dispatchers.IO) { db.serverDao().insertAll(singleServers) }
+                            statusMessage = "Added ${singleServers.size} config."
+                        } catch (e: Exception) {
+                            statusMessage = "Invalid config!"
+                        }
+                    } 
+                    // اگه کاربر یه لینک سابسکریپشن داد
                     else {
-                        withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
-                        withContext(Dispatchers.IO) { db.serverDao().insertAll(allServers) }
-                        statusMessage = "Added ${allServers.size} servers."
+                        val urls = trimmedInput.split("\n", "\r").map { it.trim() }.filter { it.isNotEmpty() }
+                        val allServers = mutableListOf<ServerEntity>()
+                        val errors = mutableListOf<String>()
+                        for (url in urls) {
+                            try { allServers.addAll(withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(url) }) } 
+                            catch (e: Exception) { errors.add("$url -> ${e.message ?: "Unknown"}") }
+                        }
+                        if (allServers.isEmpty() && errors.isNotEmpty()) { statusMessage = "All links failed!" }
+                        else {
+                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                            withContext(Dispatchers.IO) { db.serverDao().insertAll(allServers) }
+                            statusMessage = "Added ${allServers.size} servers."
+                        }
+                        errorLogs = errors
                     }
-                    errorLogs = errors
                     isLoading = false 
                 } 
             } 
-        }, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) { Text(if (isLoading) "Loading..." else "Fetch All Subscriptions") }
+        }, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) { Text(if (isLoading) "Loading..." else "Fetch / Add Config") }
         
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top=8.dp)) {
             Text(text = statusMessage, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
