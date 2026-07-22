@@ -111,32 +111,45 @@ fun VpnAppScreen() {
             if (inputText.isNotBlank()) { 
                 isLoading = true; statusMessage = "Processing..."; errorLogs = emptyList()
                 scope.launch { 
-                    val trimmedInput = inputText.trim()
-                    if (!trimmedInput.startsWith("http://") && !trimmedInput.startsWith("https://")) {
-                        try {
-                            val parsedServers = ConfigParser.parseSubscription(trimmedInput)
-                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
-                            withContext(Dispatchers.IO) { db.serverDao().insertAll(parsedServers) }
-                            statusMessage = "Added ${parsedServers.size} config(s)."
-                        } catch (e: Exception) {
-                            statusMessage = "Parse Error: ${e.message}"
+                    val allServers = mutableListOf<ServerEntity>()
+                    val errors = mutableListOf<String>()
+                    
+                    val urls = mutableListOf<String>()
+                    val configs = StringBuilder()
+                    
+                    inputText.split("\n", "\r").forEach { line ->
+                        val trimmedLine = line.trim()
+                        if (trimmedLine.startsWith("http://") || trimmedLine.startsWith("https://")) {
+                            urls.add(trimmedLine)
+                        } else if (trimmedLine.isNotEmpty()) {
+                            configs.append(trimmedLine).append("\n")
                         }
-                    } else {
-                        val urls = trimmedInput.split("\n", "\r").map { it.trim() }.filter { it.isNotEmpty() }
-                        val allServers = mutableListOf<ServerEntity>()
-                        val errors = mutableListOf<String>()
-                        for (url in urls) {
-                            try { allServers.addAll(withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(url) }) } 
-                            catch (e: Exception) { errors.add("$url -> ${e.message ?: "Unknown"}") }
-                        }
-                        if (allServers.isEmpty() && errors.isNotEmpty()) { statusMessage = "All links failed!" }
-                        else {
-                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
-                            withContext(Dispatchers.IO) { db.serverDao().insertAll(allServers) }
-                            statusMessage = "Added ${allServers.size} servers."
-                        }
-                        errorLogs = errors
                     }
+                    
+                    if (configs.trim().isNotEmpty()) {
+                        try { 
+                            allServers.addAll(ConfigParser.parseSubscription(configs.toString())) 
+                        } catch (e: Exception) { 
+                            errors.add("Config Error -> ${e.message}") 
+                        }
+                    }
+
+                    for (url in urls) {
+                        try { 
+                            allServers.addAll(withContext(Dispatchers.IO) { SubFetcher.fetchAndParse(url) }) 
+                        } catch (e: Exception) { 
+                            errors.add("$url -> ${e.message ?: "Unknown"}") 
+                        }
+                    }
+
+                    if (allServers.isEmpty() && errors.isNotEmpty()) { 
+                        statusMessage = "All inputs failed!" 
+                    } else {
+                        withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                        withContext(Dispatchers.IO) { db.serverDao().insertAll(allServers) }
+                        statusMessage = "Added ${allServers.size} servers. (${errors.size} failed)"
+                    }
+                    errorLogs = errors
                     isLoading = false 
                 } 
             } 
