@@ -45,7 +45,6 @@ fun VpnAppScreen() {
     val clipboardManager = LocalClipboardManager.current
     val servers by db.serverDao().getAllServers().collectAsState(initial = emptyList())
     
-    // متغیرهای ورودی و وضعیت
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf("") }
@@ -83,11 +82,10 @@ fun VpnAppScreen() {
         Text("OFA VPN", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
         
-        // کادر ورودی (هم برای ساب و هم برای کانفیگ تکی)
         OutlinedTextField(
             value = inputText, 
             onValueChange = { inputText = it }, 
-            label = { Text("Paste Sub URL OR Single Config (vmess/vless)") }, 
+            label = { Text("Paste Sub URL OR Config (JSON/vless)") }, 
             modifier = Modifier.fillMaxWidth().height(100.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -98,18 +96,22 @@ fun VpnAppScreen() {
                 scope.launch { 
                     val trimmedInput = inputText.trim()
                     
-                    // اگه کاربر یه کانفیگ تکی داد
-                    if (trimmedInput.startsWith("vmess://") || trimmedInput.startsWith("vless://") || trimmedInput.startsWith("trojan://")) {
+                    // اگه با http شروع نشد، یعنی کانفیگ مستقیمه (JSON یا vmess://)
+                    if (!trimmedInput.startsWith("http://") && !trimmedInput.startsWith("https://")) {
                         try {
-                            val singleServers = ConfigParser.parseSubscription(trimmedInput)
-                            withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
-                            withContext(Dispatchers.IO) { db.serverDao().insertAll(singleServers) }
-                            statusMessage = "Added ${singleServers.size} config."
+                            val parsedServers = ConfigParser.parseSubscription(trimmedInput)
+                            if (parsedServers.isEmpty()) {
+                                statusMessage = "No valid servers found in input."
+                            } else {
+                                withContext(Dispatchers.IO) { db.serverDao().deleteAll() }
+                                withContext(Dispatchers.IO) { db.serverDao().insertAll(parsedServers) }
+                                statusMessage = "Added ${parsedServers.size} config(s)."
+                            }
                         } catch (e: Exception) {
-                            statusMessage = "Invalid config!"
+                            statusMessage = "Parse Error: ${e.message}"
                         }
                     } 
-                    // اگه کاربر یه لینک سابسکریپشن داد
+                    // اگه لینک سابسکریپشن بود
                     else {
                         val urls = trimmedInput.split("\n", "\r").map { it.trim() }.filter { it.isNotEmpty() }
                         val allServers = mutableListOf<ServerEntity>()
