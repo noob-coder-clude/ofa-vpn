@@ -7,54 +7,64 @@ import android.util.Base64
 object ConfigBuilder {
     fun build(server: ServerEntity): String {
         val outbound = JSONObject()
-        when (server.protocol) {
-            "vmess" -> {
-                val b64 = server.rawUri.removePrefix("vmess://")
-                val json = JSONObject(String(Base64.decode(b64, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)))
-                
-                outbound.put("protocol", "vmess")
-                val settings = JSONObject()
-                val vnext = JSONObject()
-                vnext.put("address", server.address)
-                vnext.put("port", server.port)
-                val user = JSONObject()
-                user.put("id", server.uuid)
-                user.put("alterId", json.optInt("aid", 0))
-                user.put("security", "auto")
-                vnext.put("users", listOf(user))
-                settings.put("vnext", listOf(vnext))
-                outbound.put("settings", settings)
+        
+        // اگه rawUri با خودش یه JSON بود (مربوط به کانفیگ‌های JSON که پارس کردیم)
+        if (server.rawUri.trim().startsWith("{")) {
+            val jsonOutbound = JSONObject(server.rawUri)
+            outbound.put("protocol", jsonOutbound.optString("type"))
+            outbound.put("settings", jsonOutbound.optJSONObject("settings") ?: JSONObject())
+            outbound.put("streamSettings", jsonOutbound.optJSONObject("transport") ?: JSONObject()) // توجه: فرمت ترنسپورت باید استاندارد بشه اما موقتا همینطور میذاریم
+        } 
+        else {
+            when (server.protocol) {
+                "vmess" -> {
+                    val b64 = server.rawUri.removePrefix("vmess://")
+                    val json = JSONObject(String(Base64.decode(b64, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)))
+                    
+                    outbound.put("protocol", "vmess")
+                    val settings = JSONObject()
+                    val vnext = JSONObject()
+                    vnext.put("address", server.address)
+                    vnext.put("port", server.port)
+                    val user = JSONObject()
+                    user.put("id", server.uuid)
+                    user.put("alterId", json.optInt("aid", 0))
+                    user.put("security", "auto")
+                    vnext.put("users", listOf(user))
+                    settings.put("vnext", listOf(vnext))
+                    outbound.put("settings", settings)
 
-                val streamSettings = JSONObject()
-                streamSettings.put("network", json.optString("net", "tcp"))
-                streamSettings.put("security", json.optString("tls", "none"))
-                if (json.optString("tls") == "tls") {
-                    streamSettings.put("tlsSettings", JSONObject().put("serverName", json.optString("sni", server.address)))
+                    val streamSettings = JSONObject()
+                    streamSettings.put("network", json.optString("net", "tcp"))
+                    streamSettings.put("security", json.optString("tls", "none"))
+                    if (json.optString("tls") == "tls") {
+                        streamSettings.put("tlsSettings", JSONObject().put("serverName", json.optString("sni", server.address)))
+                    }
+                    if (json.optString("net") == "ws") {
+                        val wsSettings = JSONObject()
+                        wsSettings.put("path", json.optString("path", "/"))
+                        wsSettings.put("headers", JSONObject().put("Host", json.optString("host", server.address)))
+                        streamSettings.put("wsSettings", wsSettings)
+                    }
+                    outbound.put("streamSettings", streamSettings)
                 }
-                if (json.optString("net") == "ws") {
-                    val wsSettings = JSONObject()
-                    wsSettings.put("path", json.optString("path", "/"))
-                    wsSettings.put("headers", JSONObject().put("Host", json.optString("host", server.address)))
-                    streamSettings.put("wsSettings", wsSettings)
+                "vless", "trojan" -> {
+                    outbound.put("protocol", server.protocol)
+                    val settings = JSONObject()
+                    val serverObj = JSONObject()
+                    serverObj.put("address", server.address)
+                    serverObj.put("port", server.port)
+                    if (server.protocol == "vless") {
+                        val user = JSONObject().put("id", server.uuid).put("encryption", "none")
+                        settings.put("clients", listOf(user))
+                        settings.put("decryption", "none")
+                    } else {
+                        settings.put("password", server.uuid)
+                    }
+                    serverObj.put("method", "chacha20")
+                    settings.put("servers", listOf(serverObj))
+                    outbound.put("settings", settings)
                 }
-                outbound.put("streamSettings", streamSettings)
-            }
-            "vless", "trojan" -> {
-                outbound.put("protocol", server.protocol)
-                val settings = JSONObject()
-                val serverObj = JSONObject()
-                serverObj.put("address", server.address)
-                serverObj.put("port", server.port)
-                if (server.protocol == "vless") {
-                    val user = JSONObject().put("id", server.uuid).put("encryption", "none")
-                    settings.put("clients", listOf(user))
-                    settings.put("decryption", "none")
-                } else {
-                    settings.put("password", server.uuid)
-                }
-                serverObj.put("method", "chacha20")
-                settings.put("servers", listOf(serverObj))
-                outbound.put("settings", settings)
             }
         }
 

@@ -17,23 +17,20 @@ object ConfigParser {
                 // ۱. پشتیبانی از فرمت Clash با Regex
                 cleanContent.contains("proxies:") -> parseClashWithRegex(cleanContent, servers)
                 
-                // ۲. پشتیبانی از JSON
+                // ۲. پشتیبانی از JSON (اعم از آرایه و آبجکت)
                 cleanContent.startsWith("[") || cleanContent.startsWith("{") -> parseJson(cleanContent, servers)
                 
                 // ۳. پشتیبانی از Base64 و متن خام
                 else -> parseBase64OrPlain(cleanContent, servers)
             }
         } catch (e: Exception) {
-            // دیگه سکوت نمی‌کنه! ارور رو پرت می‌کنه بیرون تا تو UI نشونش بدیم
             throw Exception("Parse Error: ${e.message}")
         }
         return servers
     }
 
     private fun parseClashWithRegex(content: String, servers: MutableList<ServerEntity>) {
-        // پیدا کردن بلاک‌های پروکسی با Regex
         val proxyRegex = Regex("(?s)- \\{.*?name: (.*?)\\n.*?type: (.*?)\\n.*?server: (.*?)\\n.*?port: (.*?)\\n.*?(?:uuid: (.*?)\\n)?.*?\\}")
-        
         proxyRegex.findAll(content).forEach { match ->
             try {
                 val name = match.groupValues[1].trim().replace("\"", "")
@@ -58,18 +55,29 @@ object ConfigParser {
     }
 
     private fun parseJson(content: String, servers: MutableList<ServerEntity>) {
-        if (content.startsWith("[")) {
-            val array = JSONArray(content)
-            for (i in 0 until array.length()) {
-                val item = array.optJSONObject(i)
-                if (item != null && item.has("add") && item.has("id")) {
-                    val b64 = Base64.encodeToString(item.toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-                    servers.add(ServerEntity(name=item.optString("ps","VMess"), protocol="vmess", address=item.optString("add"), port=item.optInt("port"), uuid=item.optString("id"), rawUri="vmess://$b64"))
-                } else {
-                    val str = array.optString(i)
-                    if (str.startsWith("vmess://") || str.startsWith("vless://")) parseBase64OrPlain(str, servers)
+        val root = JSONObject(content)
+        
+        // اگه فرمت استاندارد کانفیگ Xray بود (داشتن outbounds)
+        if (root.has("outbounds")) {
+            val outbounds = root.getJSONArray("outbounds")
+            for (i in 0 until outbounds.length()) {
+                val outbound = outbounds.optJSONObject(i) ?: continue
+                val type = outbound.optString("type")
+                if (type == "vmess" || type == "vless" || type == "trojan") {
+                    val name = outbound.optString("tag", "Unknown JSON")
+                    val serverAddr = outbound.optString("server")
+                    val serverPort = outbound.optInt("server_port", 443)
+                    val uuid = outbound.optString("uuid")
+                    
+                    // ذخیره کل JSON به عنوان rawUri برای استفاده مستقیم در ConfigBuilder
+                    servers.add(ServerEntity(name=name, protocol=type, address=serverAddr, port=serverPort, uuid=uuid, rawUri=outbound.toString()))
                 }
             }
+        } 
+        // اگه فرمت آرایه‌ای از VMess بود
+        else if (root.has("add") && root.has("id")) {
+            val b64 = Base64.encodeToString(root.toString().toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            servers.add(ServerEntity(name=root.optString("ps","VMess"), protocol="vmess", address=root.optString("add"), port=root.optInt("port"), uuid=root.optString("id"), rawUri="vmess://$b64"))
         }
     }
 
