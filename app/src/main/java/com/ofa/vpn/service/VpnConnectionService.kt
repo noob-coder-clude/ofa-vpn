@@ -5,6 +5,7 @@ import android.net.VpnService
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import com.ofa.vpn.core.MihomoConfigBuilder
+import com.ofa.vpn.core.UpdateManager
 import com.ofa.vpn.data.local.ServerEntity
 import com.google.gson.Gson
 import java.io.File
@@ -41,9 +42,13 @@ class VpnConnectionService : VpnService() {
             if (vpnInterface == null) { stopSelf(); return }
 
             val tunFd = vpnInterface!!.detachFd()
-            val mihomoBinary = File(applicationInfo.nativeLibraryDir, "libmihomo.so")
+            
+            // استفاده از UpdateManager برای پیدا کردن مسیر فایل اجرایی
+            val updateManager = UpdateManager(this)
+            val mihomoBinary = File(updateManager.getActiveCorePath())
             
             if (mihomoBinary.exists()) {
+                mihomoBinary.setExecutable(true, true)
                 val workDir = File(filesDir, "mihomo_data")
                 workDir.mkdirs()
                 val configFile = File(workDir, "config.yaml")
@@ -60,9 +65,9 @@ class VpnConnectionService : VpnService() {
                 mihomoProcess = pb.start()
                 
                 Thread { mihomoProcess?.inputStream?.bufferedReader()?.use { r -> var l: String?; while (r.readLine().also { l = it } != null) Log.i("Mihomo", l ?: "") } }.start()
-                Log.i("VpnService", "Mihomo started with TUN FD: $tunFd")
+                Log.i("VpnService", "Mihomo started from: ${mihomoBinary.absolutePath}")
             } else {
-                Log.e("VpnService", "libmihomo.so not found!")
+                Log.e("VpnService", "Mihomo binary not found!")
                 stopVpn()
             }
 
