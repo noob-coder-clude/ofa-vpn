@@ -61,7 +61,7 @@ object MihomoConfigBuilder {
                     proxyYaml.append("    type: ${server.protocol}\n")
                     proxyYaml.append("    server: ${server.address}\n")
                     proxyYaml.append("    port: ${server.port}\n")
-                    proxyYaml.append("    password: ${server.uuid}\n") // For trojan or vless uuid
+                    proxyYaml.append("    password: ${server.uuid}\n")
                     proxyYaml.append("    sni: ${server.address}\n")
                     proxyYaml.append("    skip-cert-verify: true\n")
                 }
