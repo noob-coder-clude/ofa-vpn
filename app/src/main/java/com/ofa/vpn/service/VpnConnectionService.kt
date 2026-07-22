@@ -55,7 +55,7 @@ class VpnConnectionService : VpnService() {
             // ۳. اجرای tun2socks
             val tun2socksBinary = File(applicationInfo.nativeLibraryDir, "libtun2socks.so")
             if (tun2socksBinary.exists()) {
-                val tunFd = vpnInterface!!.detachFd() // گرفتن شناسه رابط TUN
+                val tunFd = vpnInterface!!.detachFd()
                 
                 // باینری xjasonlyu/tun2socks با سوئیچ -fd شناسه رو میگیره
                 val pb = ProcessBuilder(
