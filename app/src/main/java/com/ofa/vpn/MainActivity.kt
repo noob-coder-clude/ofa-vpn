@@ -12,7 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.ofa.vpn.data.local.AppDatabase
 import com.ofa.vpn.data.local.ServerEntity
@@ -33,6 +35,7 @@ fun VpnAppScreen() {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
+    val clipboardManager = LocalClipboardManager.current
     val servers by db.serverDao().getAllServers().collectAsState(initial = emptyList())
     var bulkUrls by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -50,7 +53,17 @@ fun VpnAppScreen() {
                     else { errorLogs.forEach { err -> Text("- $err\n", style = MaterialTheme.typography.bodySmall) } }
                 }
             },
-            confirmButton = { Button(onClick = { showErrors = false }) { Text("Close") } }
+            confirmButton = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = {
+                        clipboardManager.setText(AnnotatedString(errorLogs.joinToString("\n")))
+                    }) {
+                        Text("Copy Log")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { showErrors = false }) { Text("Close") }
+                }
+            }
         )
     }
 
